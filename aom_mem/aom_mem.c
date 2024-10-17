@@ -37,18 +37,32 @@ static int check_size_argument_overflow(size_t nmemb, size_t size,
   return 1;
 }
 
+#if defined(__CHERI_PURE_CAPABILITY__)
+static uintptr_t *GetMallocAddressLocation(void *const mem) {
+  return ((uintptr_t *)mem) - 1;
+#else   // !__CHERI_PURE_CAPABILITY__
 static size_t *GetMallocAddressLocation(void *const mem) {
   return ((size_t *)mem) - 1;
+#endif  // !__CHERI_PURE_CAPABILITY__
 }
 
 static void SetActualMallocAddress(void *const mem,
                                    const void *const malloc_addr) {
+#if defined(__CHERI_PURE_CAPABILITY__)
+  uintptr_t *const malloc_addr_location = GetMallocAddressLocation(mem);
+  *malloc_addr_location = (uintptr_t)malloc_addr;
+#else   // !__CHERI_PURE_CAPABILITY__
   size_t *const malloc_addr_location = GetMallocAddressLocation(mem);
   *malloc_addr_location = (size_t)malloc_addr;
+#endif  // !__CHERI_PURE_CAPABILITY__
 }
 
 static void *GetActualMallocAddress(void *const mem) {
+#if defined(__CHERI_PURE_CAPABILITY__)
+  const uintptr_t *const malloc_addr_location = GetMallocAddressLocation(mem);
+#else   // !__CHERI_PURE_CAPABILITY__
   const size_t *const malloc_addr_location = GetMallocAddressLocation(mem);
+#endif  // !__CHERI_PURE_CAPABILITY__
   return (void *)(*malloc_addr_location);
 }
 
